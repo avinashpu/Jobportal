@@ -1,18 +1,5 @@
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
-const multer = require('multer');
-const path = require('path');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-
-const upload = multer({ storage: storage });
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
@@ -25,30 +12,31 @@ const registerUser = async (req, res) => {
   }
 
   try {
-  
+   
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
-    const resumePath = req.file.path;
+    const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
+
+    if (!cloudinaryResponse) {
+      return res.status(500).json({ msg: 'Error uploading resume to Cloudinary' });
+    }
 
     user = new User({
       name,
       email,
-      password,  
-      resume: resumePath,
+      password,
+      resume: cloudinaryResponse.url, 
     });
 
     await user.save();
-    res.status(201).json({ msg: 'User registered successfully' });
+    res.status(201).json({ msg: 'User registered successfully', resumeUrl: cloudinaryResponse.url });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 };
 
-module.exports = {
-  registerUser,
-  upload,
-};
+module.exports = { registerUser };

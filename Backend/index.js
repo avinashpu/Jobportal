@@ -9,9 +9,16 @@ const app = express();
 
 connectDB();
 
+const corsOptions = {
+    origin: '*',  
+    Credential: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+    allowedHeaders: 'Content-Type, Authorization',
+};
 
 app.use(cors());
 app.use(express.json());
+app.use(cors(corsOptions));
 app.use('/uploads', express.static('uploads')); 
 
 app.use('/api/auth', require('./routes/authRoutes'));
